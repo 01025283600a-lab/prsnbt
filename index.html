@@ -304,10 +304,13 @@
         // ==========================================
         // ВЗАИМОДЕЙСТВИЕ С СЕРВЕРОМ
         // ==========================================
-        const SERVER_URL = 'https://corporate-gatherer-trade.ngrok-free.dev'; 
+        const SERVER_URL = 'https://trofim-prison-bot.loca.lt'; 
         
         const socket = io(SERVER_URL, {
-            transports: ['websocket', 'polling']
+            transports: ['websocket', 'polling'],
+            extraHeaders: {
+                "Bypass-Tunnel-Reminder": "true"
+            }
         });
 
         const statusDot = document.getElementById('server-dot');
