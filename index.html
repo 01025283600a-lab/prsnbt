@@ -2,298 +2,448 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Prison Bot Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Prison Bot Panel</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-color: #0b0f19;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --accent-primary: #8b5cf6;
-            --accent-secondary: #ec4899;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --success: #10b981;
-            --danger: #ef4444;
-        }
-
         body {
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #000000 100%);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
+            /* Отступ для "чёлки" айфона (safe-area-inset-top) */
+            padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            padding-left: 16px;
+            padding-right: 16px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
 
-        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
-
-        .api-setup { margin-bottom: 15px; }
-        .api-input {
-            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5);
-            border: 1px solid var(--accent-primary); color: white;
-            padding: 12px; border-radius: 12px; font-size: 13px; text-align: center;
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
 
-        .glass-card {
-            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); margin-bottom: 20px;
+        .glass-btn {
+            background: linear-gradient(180deg, rgba(56, 189, 248, 0.1) 0%, rgba(14, 165, 233, 0.2) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .glass-btn:active {
+            transform: scale(0.96);
+            background: linear-gradient(180deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.3) 100%);
         }
 
-        .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; }
-        .user-info { display: flex; align-items: center; gap: 16px; }
-        .avatar {
-            width: 52px; height: 52px; border-radius: 18px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: 800; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+        .glass-btn-danger {
+            background: linear-gradient(180deg, rgba(248, 113, 113, 0.1) 0%, rgba(220, 38, 38, 0.2) 100%);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
         }
-        .user-details h2 { margin: 0; font-size: 19px; font-weight: 700; }
-        .user-details p { margin: 4px 0 0 0; font-size: 11px; color: var(--success); font-weight: 500; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-
-        .balance { text-align: right; display: flex; flex-direction: column; align-items: flex-end;}
-        .balance p { margin: 0; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-        .balance strong { 
-            font-size: 19px; font-weight: 800; 
-            background: linear-gradient(to right, #fbbf24, #f59e0b);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        
+        .glass-btn-danger:active {
+            transform: scale(0.96);
         }
-        .btn-mini {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: white; padding: 4px 10px; border-radius: 8px; font-size: 10px;
-            margin-top: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 12px;
+            transition: border-color 0.3s ease;
         }
-        .btn-mini:active { transform: scale(0.95); }
-
-        .tabs { display: flex; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 20px; margin-bottom: 24px; border: 1px solid var(--glass-border); }
-        .tab { flex: 1; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 14px; color: var(--text-muted); transition: 0.3s; }
-        .tab.active { color: white; background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.05); }
-        .panel { display: none; animation: slideUp 0.4s ease forwards; }
-        .panel.active { display: block; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-        .boss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 12px; max-height: 400px; overflow-y: auto; }
-        .boss-item { background: rgba(0, 0, 0, 0.2); padding: 10px 6px; border-radius: 16px; text-align: center; border: 1px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: 0.3s; }
-        .boss-item.in-battle { border-color: var(--danger); background: rgba(239, 68, 68, 0.15); box-shadow: 0 0 15px rgba(239,68,68,0.2); }
-        .boss-icon { font-size: 24px; background: rgba(255, 255, 255, 0.05); width: 45px; height: 45px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-        .boss-name { font-size: 9px; font-weight: 700; color: var(--text-main); }
-        .boss-status-text { font-size: 8px; color: var(--success); background: rgba(0,0,0,0.4); padding: 3px 6px; border-radius: 6px;}
-
-        .btn-glow {
-            display: block; width: 100%; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: white; border: none; padding: 18px; border-radius: 20px; font-size: 16px; font-weight: 800; text-align: center;
-            cursor: pointer; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3); text-transform: uppercase; margin-top: 10px; transition: 0.2s;
+        
+        .glass-input:focus {
+            outline: none;
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
         }
-        .btn-glow:active { transform: scale(0.98); }
-        .btn-glow.danger { background: linear-gradient(135deg, var(--danger), #f87171); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3); }
+
+        .tab-btn {
+            color: rgba(255, 255, 255, 0.5);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            color: #38bdf8;
+            border-bottom: 2px solid #38bdf8;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        .boss-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .status-online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+
+        .terminal-log {
+            font-family: 'Courier New', Courier, monospace;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .terminal-log::-webkit-scrollbar { width: 4px; }
+        .terminal-log::-webkit-scrollbar-track { background: transparent; }
+        .terminal-log::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
+        
+        .toggle-checkbox:checked { right: 0; border-color: #38bdf8; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #38bdf8; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-<div class="container">
-    <div class="api-setup">
-        <input type="text" id="apiUrl" class="api-input" placeholder="🔗 Вставьте ссылку localtunnel (https://...loca.lt)">
-    </div>
-
-    <!-- Шапка (Аватар, Имя, Статус, Баланс) -->
-    <div class="glass-card header">
-        <div class="user-info">
-            <div class="avatar" id="avatarLetter">?</div>
-            <div class="user-details">
-                <h2 id="userName">Player</h2>
-                <p id="botStatus">Нет связи с ПК</p>
+    <!-- Header / Status -->
+    <header class="glass-panel p-4 mb-6 flex justify-between items-center relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 via-blue-500 to-sky-400 opacity-50"></div>
+        <div>
+            <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-300">PRISON BOT</h1>
+            <div class="flex items-center text-xs mt-1 text-gray-400">
+                <span id="server-dot" class="status-dot status-offline mr-2"></span>
+                <span id="server-status">Ожидание связи...</span>
             </div>
         </div>
-        <div class="balance">
-            <p>Сигареты</p>
-            <strong id="balanceCount">0</strong>
-            <button class="btn-mini" onclick="sendCommand('collect_cigs')">СОБРАТЬ</button>
+        <div class="text-right">
+            <div class="text-xs text-gray-400 mb-1">Баланс сигарет</div>
+            <div class="font-bold text-lg text-white flex items-center justify-end gap-1">
+                <span id="cigs-balance">0</span> <span class="text-xl">🚬</span>
+            </div>
+            <button onclick="sendCommand('collect_cigs')" class="text-[10px] text-sky-400 uppercase tracking-wider mt-1 hover:text-sky-300 transition">Собрать налог</button>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="flex justify-around mb-6 border-b border-white/10 pb-2">
+        <button onclick="switchTab('arena')" id="tab-arena" class="tab-btn active pb-2 px-4 font-semibold tracking-wide">АРЕНА</button>
+        <button onclick="switchTab('bosses')" id="tab-bosses" class="tab-btn pb-2 px-4 font-semibold tracking-wide">БОССЫ</button>
+        <button onclick="switchTab('logs')" id="tab-logs" class="tab-btn pb-2 px-4 font-semibold tracking-wide">ЛОГИ</button>
+    </div>
+
+    <!-- TAB 1: ARENA -->
+    <div id="content-arena" class="flex-1">
+        <div class="glass-panel p-5 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-bold text-gray-300 uppercase tracking-wider">Настройка Арены</h2>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">Бесконечно</span>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="infinity-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out"/>
+                        <label for="infinity-toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-600 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="cycles-container" class="grid grid-cols-2 gap-4 mb-4 transition-all duration-300">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Циклов</label>
+                    <input type="number" id="input-cycles" value="1" class="glass-input w-full p-2 text-center font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">До раунда</label>
+                    <input type="number" id="input-rounds" value="5" class="glass-input w-full p-2 text-center font-bold">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs text-gray-400 mb-1">На лимите (когда раунд достигнут)</label>
+                <select id="input-action" class="glass-input w-full p-2 text-sm appearance-none">
+                    <option value="surrender">Выйти и забрать награду</option>
+                    <option value="stop">Остановиться в бою</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Порог еды (Зажимать если ниже)</label>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">⚡</span>
+                    <input type="number" id="input-energy" value="200" class="glass-input w-full p-2 font-bold">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="startArena()" class="glass-btn text-white font-bold py-4 rounded-xl flex flex-col items-center justify-center gap-1">
+                <span class="text-2xl">▶️</span>
+                <span class="text-xs uppercase tracking-wider">Запуск Арены</span>
+            </button>
+            <button onclick="sendCommand('stop')" class="glass-btn-danger text-white font-bold py-4 rounded-xl flex flex-col items-center justify-center gap-1">
+                <span class="text-2xl">🛑</span>
+                <span class="text-xs uppercase tracking-wider">Остановить</span>
+            </button>
         </div>
     </div>
 
-    <!-- Вкладки навигации -->
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('arena')" id="tab-arena">Арена</div>
-        <div class="tab" onclick="switchTab('bosses')" id="tab-bosses">Боссы</div>
-    </div>
+    <!-- TAB 2: BOSSES -->
+    <div id="content-bosses" class="hidden flex-1 flex flex-col">
+        <button onclick="startBosses()" class="glass-btn w-full text-white font-bold py-4 rounded-xl mb-6 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(56,189,248,0.3)]">
+            <span class="text-2xl">👹</span>
+            <span class="tracking-widest uppercase text-sm">Убить выбранных боссов</span>
+        </button>
 
-    <!-- Панель Арены -->
-    <div id="panel-arena" class="panel active">
-        <button class="btn-glow" id="startArenaBtn" onclick="toggleMode('arena')">ЗАПУСТИТЬ АРЕНУ</button>
-    </div>
-
-    <!-- Панель Боссов -->
-    <div id="panel-bosses" class="panel">
-        <div class="glass-card">
-            <div class="boss-grid" id="bossGrid"></div>
+        <div class="flex justify-between items-center mb-3 pl-1">
+            <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Очередь Рейда</h2>
+            <div class="flex gap-4">
+                <button onclick="toggleAllBosses(true)" class="text-[10px] text-sky-400 hover:text-sky-300 uppercase tracking-wider font-bold">Выбрать всех</button>
+                <button onclick="toggleAllBosses(false)" class="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider font-bold">Сбросить</button>
+            </div>
         </div>
-        <button class="btn-glow" id="startBossesBtn" onclick="toggleMode('bosses')">НАЧАТЬ РЕЙДЫ</button>
-    </div>
-</div>
-
-<script>
-    const tg = window.Telegram.WebApp;
-    
-    // Включаем полноэкранный режим (для новых версий TG)
-    if (tg.requestFullscreen) {
-        tg.requestFullscreen();
-    } else {
-        tg.expand();
-    }
-
-    if (tg.initDataUnsafe?.user) {
-        document.getElementById('userName').textContent = tg.initDataUnsafe.user.first_name;
-        document.getElementById('avatarLetter').textContent = tg.initDataUnsafe.user.first_name.charAt(0).toUpperCase();
-    }
-    
-    let apiUrl = localStorage.getItem('prisonApiUrl') || '';
-    document.getElementById('apiUrl').value = apiUrl;
-    
-    document.getElementById('apiUrl').addEventListener('change', (e) => {
-        apiUrl = e.target.value.trim();
-        // Убираем слэш на конце, если пользователь его случайно скопировал
-        if(apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
-        localStorage.setItem('prisonApiUrl', apiUrl);
-    });
-
-    const bosses = [
-        { id: 'kucheryavyi', name: 'КУЧЕРЯВЫЙ', icon: '🧑‍🦱' }, { id: 'bankir', name: 'БАНКИР', icon: '💼' },
-        { id: 'ashab', name: 'АШАБ', icon: '🥊' }, { id: 'oleg', name: 'ОЛЕГ ДЕЖАВЮ', icon: '🕴️' },
-        { id: 'makaron', name: 'АРСЕНИЙ МАКАРОН', icon: '🍝' }, { id: 'businessman', name: 'БИЗНЕСМЕН', icon: '👔' },
-        { id: 'pidzhak', name: 'ПИДЖАК', icon: '🧥' }, { id: 'zhan', name: 'ЖАН ЧЕТЫРЕХПАЛЫЙ', icon: '🖐️' },
-        { id: 'sergey', name: 'СЕРГЕЙ ПИРАМИДОВИЧ', icon: '🔺' }, { id: 'nurlyz', name: 'НУРЛЫЗ СУЕТАНОВ', icon: '🏃‍♂️' },
-        { id: 'zahar', name: 'ЗАХАР', icon: '🧔' }, { id: 'dipipi', name: 'ДИ ПИПИ', icon: '🧢' },
-        { id: 'foma', name: 'ФОМА', icon: '💪' }, { id: 'shayba', name: 'ШАЙБА', icon: '🏒' },
-        { id: 'payalnik', name: 'ПАЯЛЬНИК', icon: '🔥' }, { id: 'slesar', name: 'СЛЕСАРЬ', icon: '🔧' },
-        { id: 'vito', name: 'ВИТО', icon: '🎩' }, { id: 'povar', name: 'ПОВАР', icon: '👨‍🍳' },
-        { id: 'pogremushka', name: 'ПОГРЕМУШКА', icon: '🐍' }, { id: 'monah', name: 'МОНАХ', icon: '🧘‍♂️' },
-        { id: 'santehnik', name: 'САНТЕХНИК', icon: '🪠' }, { id: 'shuler', name: 'ШУЛЕР', icon: '🃏' },
-        { id: 'buryat', name: 'БУРЯТ', icon: '👲' }, { id: 'mafioznik', name: 'МАФИОЗНИК', icon: '🔫' },
-        { id: 'karatist', name: 'КАРАТИСТ', icon: '🥋' }
-    ];
-
-    function renderBosses() {
-        const grid = document.getElementById('bossGrid');
-        grid.innerHTML = '';
-        bosses.forEach((b, index) => {
-            grid.innerHTML += `
-                <div class="boss-item" id="boss-card-${index}">
-                    <div class="boss-icon">${b.icon}</div>
-                    <div class="boss-name">${b.name}</div>
-                    <div class="boss-status-text" id="boss-status-${index}">Ожидание</div>
-                </div>`;
-        });
-    }
-    renderBosses();
-
-    function switchTab(tab) {
-        ['arena', 'bosses'].forEach(t => {
-            document.getElementById(`tab-${t}`).classList.remove('active');
-            document.getElementById(`panel-${t}`).classList.remove('active');
-        });
-        document.getElementById(`tab-${tab}`).classList.add('active');
-        document.getElementById(`panel-${tab}`).classList.add('active');
-    }
-
-    async function fetchState() {
-        if(!apiUrl) return; // Если ссылки нет, ничего не делаем
         
-        try {
-            // Запрашиваем статус у ПК. 'Bypass-Tunnel-Reminder' нужен, чтобы пробить защиту localtunnel
-            const res = await fetch(`${apiUrl}/api/state`, { headers: { 'Bypass-Tunnel-Reminder': 'true' } });
-            const state = await res.json();
+        <div class="overflow-y-auto pr-2 pb-10 space-y-2 flex-1" id="boss-list">
+            <!-- Bosses will be injected here via JS -->
+        </div>
+    </div>
+
+    <!-- TAB 3: LOGS -->
+    <div id="content-logs" class="hidden flex-1 flex flex-col h-full">
+        <div class="flex justify-between items-end mb-2 px-1">
+            <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Терминал</h2>
+            <button onclick="document.getElementById('log-container').innerHTML=''" class="text-[10px] text-gray-500 hover:text-white transition">Очистить</button>
+        </div>
+        <div id="log-container" class="terminal-log flex-1 p-3 overflow-y-auto flex flex-col gap-1 shadow-inner h-[60vh]">
+            <div class="text-sky-400">PrisonBot Panel v2.1 initialized.</div>
+            <div class="text-gray-400">Ожидание логов сервера...</div>
+        </div>
+    </div>
+
+    <script>
+        // Init Telegram Web App
+        const tg = window.Telegram.WebApp;
+        
+        // Разворачиваем только на мобилках (iOS/Android), на ПК оставляем стандарным
+        if (tg.platform === 'ios' || tg.platform === 'android') {
+            tg.expand();
+        }
+        
+        tg.ready();
+        
+        if (tg.setHeaderColor) {
+            tg.setHeaderColor('#0f172a');
+            tg.setBackgroundColor('#000000');
+        }
+
+        // ==========================================
+        // БОССЫ (Точный список и ID из бэкенда!)
+        // ==========================================
+        const bosses = [
+            { id: 'homa', name: 'Кучерявый', emoji: '🧑‍🦱' },
+            { id: 'banker', name: 'Банкир', emoji: '💼' },
+            { id: 'ashab', name: 'Ашаб', emoji: '🧔🏽‍♂️' },
+            { id: 'oleg', name: 'Олег Дежавю', emoji: '🌀' },
+            { id: 'makaron', name: 'Арсений Макарон', emoji: '🍝' },
+            { id: 'mrbusiness', name: 'Бизнесмен', emoji: '📈' },
+            { id: 'baretsky', name: 'Пиджак', emoji: '👔' },
+            { id: 'zhan', name: 'Жан Четырехпалый', emoji: '🖐️' },
+            { id: 'sergey', name: 'Сергей Пирамидович', emoji: '🔺' },
+            { id: 'nurlyz', name: 'Нурлыз Суетанов', emoji: '🌪️' },
+            { id: 'zahar', name: 'Захар', emoji: '🪓' },
+            { id: 'dipipi', name: 'Ди Пипи', emoji: '🎧' },
+            { id: 'foma', name: 'Фома', emoji: '💪' },
+            { id: 'iceman', name: 'Шайба', emoji: '🏒' },
+            { id: 'burnman', name: 'Паяльник', emoji: '🔥' },
+            { id: 'slesar', name: 'Слесарь', emoji: '🔧' },
+            { id: 'vito', name: 'Вито', emoji: '🤌' },
+            { id: 'cook', name: 'Повар', emoji: '🔪' },
+            { id: 'snakecharmer', name: 'Погремушка', emoji: '🪇' },
+            { id: 'monk', name: 'Монах', emoji: '📿' },
+            { id: 'waterman', name: 'Сантехник', emoji: '🪠' },
+            { id: 'cheater', name: 'Шулер', emoji: '🃏' },
+            { id: 'buryat', name: 'Бурят', emoji: '😑' },
+            { id: 'mafioznik', name: 'Мафиозник', emoji: '🔫' },
+            { id: 'karateist', name: 'Каратист', emoji: '🥋' }
+        ];
+
+        const bossListEl = document.getElementById('boss-list');
+        bosses.forEach(b => {
+            const el = document.createElement('label');
+            el.className = 'boss-card p-3 flex items-center justify-between cursor-pointer block';
+            el.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <input type="checkbox" value="${b.id}" checked class="boss-checkbox w-5 h-5 rounded border-gray-600 bg-black/50 accent-sky-500">
+                    <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-xl border border-white/5 shadow-inner">
+                        ${b.emoji}
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm text-gray-200">${b.name}</div>
+                        <div class="text-[10px] text-gray-500 tracking-wider" id="status-${b.id}">Ожидает рейда</div>
+                    </div>
+                </div>
+                <div class="text-xs px-2 py-1 rounded bg-white/5 border border-white/10 text-gray-400">
+                    ${b.id}
+                </div>
+            `;
+            bossListEl.appendChild(el);
+        });
+
+        // Функция Выбрать всех / Сбросить
+        function toggleAllBosses(state) {
+            document.querySelectorAll('.boss-checkbox').forEach(cb => cb.checked = state);
+            tg.HapticFeedback.selectionChanged();
+        }
+
+        // ==========================================
+        // ВЗАИМОДЕЙСТВИЕ С СЕРВЕРОМ
+        // ==========================================
+        const SERVER_URL = 'https://corporate-gatherer-trade.ngrok-free.dev'; 
+        
+        const socket = io(SERVER_URL, {
+            transports: ['websocket', 'polling']
+        });
+
+        const statusDot = document.getElementById('server-dot');
+        const statusText = document.getElementById('server-status');
+        const logsContainer = document.getElementById('log-container');
+
+        function appendLog(msg, type = 'info') {
+            const div = document.createElement('div');
+            const time = new Date().toLocaleTimeString('ru-RU', { hour12: false });
             
-            // 1. Обновляем баланс сигарет
-            if (state.balance) {
-                document.getElementById('balanceCount').textContent = state.balance.toLocaleString('ru-RU');
-            }
+            let colorClass = 'text-gray-300';
+            if (msg.includes('ОШИБКА') || msg.includes('❌') || type === 'error') colorClass = 'text-red-400';
+            if (msg.includes('УСПЕШНО') || msg.includes('✅') || type === 'success') colorClass = 'text-emerald-400';
+            if (msg.includes('Удар по') || msg.includes('💥')) colorClass = 'text-amber-300';
+            if (msg.includes('Зажимаю') || msg.includes('Энергия') || msg.includes('⚡')) colorClass = 'text-sky-300';
+
+            div.className = `${colorClass} py-0.5 border-b border-white/5 last:border-0`;
+            div.innerHTML = `<span class="text-gray-600 text-[10px] mr-2">[${time}]</span> ${msg}`;
             
-            // 2. Обновляем текст статуса под именем
-            document.getElementById('botStatus').textContent = state.status;
-            document.getElementById('botStatus').style.color = state.isRunning ? 'var(--success)' : 'var(--text-muted)';
-
-            // 3. Обновляем кнопки (если бот запущен, кнопка становится красной "Остановить")
-            const arenaBtn = document.getElementById('startArenaBtn');
-            const bossBtn = document.getElementById('startBossesBtn');
-
-            if(state.isRunning && state.mode === 'arena') {
-                arenaBtn.textContent = 'ОСТАНОВИТЬ АРЕНУ'; arenaBtn.classList.add('danger');
-            } else {
-                arenaBtn.textContent = 'ЗАПУСТИТЬ АРЕНУ'; arenaBtn.classList.remove('danger');
+            logsContainer.appendChild(div);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            
+            if (currentTab !== 'logs') {
+                const tab = document.getElementById('tab-logs');
+                tab.classList.add('text-white');
+                setTimeout(() => tab.classList.remove('text-white'), 300);
             }
+        }
 
-            if(state.isRunning && state.mode === 'bosses') {
-                bossBtn.textContent = 'ОСТАНОВИТЬ РЕЙДЫ'; bossBtn.classList.add('danger');
-            } else {
-                bossBtn.textContent = 'НАЧАТЬ РЕЙДЫ'; bossBtn.classList.remove('danger');
-            }
+        socket.on('connect', () => {
+            statusDot.className = 'status-dot status-online mr-2';
+            statusText.textContent = 'Связь установлена';
+            statusText.className = 'text-emerald-400';
+            appendLog('Успешно подключено к серверу бота на ПК', 'success');
+        });
 
-            // 4. Подсвечиваем текущего босса красным цветом
-            if (state.mode === 'bosses' && state.currentBossIndex >= 0) {
-                bosses.forEach((b, i) => {
-                    const card = document.getElementById(`boss-card-${i}`);
-                    const status = document.getElementById(`boss-status-${i}`);
-                    
-                    if (i === state.currentBossIndex) {
-                        card.classList.add('in-battle');
-                        status.textContent = '⚔️ В БОЮ';
-                        status.style.color = 'var(--danger)';
-                    } else if (i < state.currentBossIndex) {
-                        card.classList.remove('in-battle');
-                        status.textContent = '✅ Пройден/КД';
-                        status.style.color = 'var(--text-muted)';
-                    } else {
-                        card.classList.remove('in-battle');
-                        status.textContent = 'Ожидание';
-                        status.style.color = 'var(--success)';
+        socket.on('disconnect', () => {
+            statusDot.className = 'status-dot status-offline mr-2';
+            statusText.textContent = 'Потеряно соединение';
+            statusText.className = 'text-red-400';
+            appendLog('Связь с сервером оборвана. Проверьте окно на ПК.', 'error');
+        });
+
+        socket.on('bot_log', (data) => {
+            appendLog(data);
+            
+            if (data.includes('Бьем босса:')) {
+                const parts = data.split(': ');
+                if (parts.length > 1) {
+                    const bid = parts[1].replace('...', '').trim();
+                    const stEl = document.getElementById(`status-${bid}`);
+                    if (stEl) {
+                        stEl.textContent = '⚔️ В бою...';
+                        stEl.className = 'text-[10px] text-amber-400 font-bold tracking-wider';
+                    }
+                }
+            } else if (data.includes('повержен!')) {
+                bosses.forEach(b => {
+                    if (data.includes(b.id) || data.includes(b.name)) {
+                        const stEl = document.getElementById(`status-${b.id}`);
+                        if (stEl) {
+                            stEl.textContent = '💀 Мертв (КД)';
+                            stEl.className = 'text-[10px] text-red-400 tracking-wider';
+                        }
                     }
                 });
             }
+        });
 
-        } catch(e) {
-            document.getElementById('botStatus').textContent = 'Нет связи с ПК!';
-            document.getElementById('botStatus').style.color = 'var(--danger)';
-        }
-    }
+        socket.on('update_balance', (data) => {
+            if (data && data.cigs) {
+                document.getElementById('cigs-balance').textContent = Number(data.cigs).toLocaleString('ru-RU');
+            }
+        });
 
-    async function sendCommand(cmd) {
-        if(!apiUrl) {
-            tg.showAlert('Пожалуйста, вставьте ссылку от localtunnel в поле сверху!');
-            return;
+        function sendCommand(cmd, payload = {}) {
+            if (!socket.connected) {
+                tg.showAlert("Нет связи с ПК! Проверьте, запущен ли бот и ngrok.");
+                return;
+            }
+            tg.HapticFeedback.impactOccurred('light');
+            socket.emit('command', { cmd, ...payload });
         }
-        try {
-            await fetch(`${apiUrl}/api/command`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
-                body: JSON.stringify({ cmd })
-            });
-            fetchState(); // Сразу обновляем интерфейс, чтобы показать реакцию
-        } catch(e) {
-            tg.showAlert('Не удалось отправить команду. Проверьте, запущено ли черное окно (Node.js) и localtunnel на вашем ПК.');
-        }
-    }
 
-    function toggleMode(mode) {
-        const btn = document.getElementById(mode === 'arena' ? 'startArenaBtn' : 'startBossesBtn');
-        if(btn.classList.contains('danger')) {
-            // Если кнопка красная - значит бот работает, отправляем команду STOP
-            sendCommand('stop');
-        } else {
-            // Иначе отправляем команду на старт
-            sendCommand(mode === 'arena' ? 'start_arena' : 'start_bosses');
+        function startArena() {
+            const isInfinity = document.getElementById('infinity-toggle').checked;
+            const payload = {
+                energyThreshold: parseInt(document.getElementById('input-energy').value) || 200,
+                limitAction: document.getElementById('input-action').value,
+                mode: isInfinity ? 'infinity' : 'rounds',
+                targetRound: isInfinity ? 999999 : (parseInt(document.getElementById('input-rounds').value) || 5),
+                cycleCount: isInfinity ? 999999 : (parseInt(document.getElementById('input-cycles').value) || 1)
+            };
+            sendCommand('start_arena', payload);
+            tg.HapticFeedback.impactOccurred('medium');
         }
-    }
 
-    // Запускаем цикл опроса ПК каждые 2 секунды
-    setInterval(fetchState, 2000);
-</script>
+        function startBosses() {
+            // Собираем всех выбранных боссов
+            const checkboxes = document.querySelectorAll('.boss-checkbox:checked');
+            const selectedBosses = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (selectedBosses.length === 0) {
+                tg.showAlert("Пожалуйста, выберите хотя бы одного босса!");
+                return;
+            }
+
+            sendCommand('start_bosses', { bosses: selectedBosses });
+            tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        document.getElementById('infinity-toggle').addEventListener('change', function(e) {
+            const cyclesContainer = document.getElementById('cycles-container');
+            if (e.target.checked) {
+                cyclesContainer.style.opacity = '0.3';
+                cyclesContainer.style.pointerEvents = 'none';
+            } else {
+                cyclesContainer.style.opacity = '1';
+                cyclesContainer.style.pointerEvents = 'auto';
+            }
+            tg.HapticFeedback.selectionChanged();
+        });
+
+        let currentTab = 'arena';
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            
+            document.getElementById('content-arena').classList.add('hidden');
+            document.getElementById('content-bosses').classList.add('hidden');
+            document.getElementById('content-logs').classList.add('hidden');
+            
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+            currentTab = tabId;
+            tg.HapticFeedback.selectionChanged();
+        }
+    </script>
 </body>
 </html>
