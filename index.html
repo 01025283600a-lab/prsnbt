@@ -227,7 +227,6 @@
     </div>
 
     <script>
-        // Init Telegram Web App
         const tg = window.Telegram.WebApp;
         
         // Разворачиваем только на мобилках (iOS/Android), на ПК оставляем стандарным
@@ -242,9 +241,7 @@
             tg.setBackgroundColor('#000000');
         }
 
-        // ==========================================
-        // БОССЫ (Точный список и ID из бэкенда!)
-        // ==========================================
+        // БОССЫ (Точный список и ID из бэкенда)
         const bosses = [
             { id: 'homa', name: 'Кучерявый', emoji: '🧑‍🦱' },
             { id: 'banker', name: 'Банкир', emoji: '💼' },
@@ -295,17 +292,15 @@
             bossListEl.appendChild(el);
         });
 
-        // Функция Выбрать всех / Сбросить
         function toggleAllBosses(state) {
             document.querySelectorAll('.boss-checkbox').forEach(cb => cb.checked = state);
             tg.HapticFeedback.selectionChanged();
         }
 
-        // ==========================================
-        // ВЗАИМОДЕЙСТВИЕ С СЕРВЕРОМ
-        // ==========================================
-        const SERVER_URL = 'https://trofim-prison-bot.loca.lt'; 
+        // НОВАЯ ПОСТОЯННАЯ ССЫЛКА НА ВАШ ПК
+        const SERVER_URL = 'https://trofim-bot-arena.loca.lt'; 
         
+        // Подключаемся, автоматически обходя окно "Click to Continue" от localtunnel
         const socket = io(SERVER_URL, {
             transports: ['websocket', 'polling'],
             extraHeaders: {
@@ -388,7 +383,7 @@
 
         function sendCommand(cmd, payload = {}) {
             if (!socket.connected) {
-                tg.showAlert("Нет связи с ПК! Проверьте, запущен ли бот и ngrok.");
+                tg.showAlert("Нет связи с ПК! Проверьте, запущен ли файл START.bat");
                 return;
             }
             tg.HapticFeedback.impactOccurred('light');
@@ -409,7 +404,6 @@
         }
 
         function startBosses() {
-            // Собираем всех выбранных боссов
             const checkboxes = document.querySelectorAll('.boss-checkbox:checked');
             const selectedBosses = Array.from(checkboxes).map(cb => cb.value);
             
