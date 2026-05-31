@@ -12,79 +12,49 @@
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            /* Отступ для челки айфона */
             padding: max(1rem, env(safe-area-inset-top)) 1rem 5rem 1rem;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
         }
-
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 20px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
-
         .glass-btn {
             background: linear-gradient(180deg, rgba(56, 189, 248, 0.1) 0%, rgba(14, 165, 233, 0.2) 100%);
             border: 1px solid rgba(56, 189, 248, 0.3);
             box-shadow: 0 4px 15px rgba(14, 165, 233, 0.2);
             transition: all 0.2s ease;
         }
-        
-        .glass-btn:active {
-            transform: scale(0.96);
-            background: linear-gradient(180deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.3) 100%);
-        }
-
+        .glass-btn:active { transform: scale(0.96); }
         .glass-btn-danger {
             background: linear-gradient(180deg, rgba(248, 113, 113, 0.1) 0%, rgba(220, 38, 38, 0.2) 100%);
             border: 1px solid rgba(248, 113, 113, 0.3);
             box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
         }
-        
-        .glass-btn-danger:active {
-            transform: scale(0.96);
-        }
-
-        .glass-input {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border-radius: 12px;
-            transition: border-color 0.3s ease;
-        }
-
+        .glass-btn-danger:active { transform: scale(0.96); }
         .tab-btn {
             color: rgba(255, 255, 255, 0.5);
             border-bottom: 2px solid transparent;
             transition: all 0.3s ease;
         }
-        
         .tab-btn.active {
             color: #38bdf8;
             border-bottom: 2px solid #38bdf8;
             text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
         }
-
         .boss-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.04);
             border-radius: 16px;
         }
-
-        .status-dot {
-            height: 10px;
-            width: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
         .status-offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
         .status-online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
-
         .terminal-log {
             font-family: 'Courier New', Courier, monospace;
             background: rgba(0, 0, 0, 0.4);
@@ -95,8 +65,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-
-    <!-- Header / Status -->
+    <!-- Header -->
     <header class="glass-panel p-4 mb-6 flex justify-between items-center relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 via-blue-500 to-sky-400 opacity-50"></div>
         <div>
@@ -122,7 +91,7 @@
         <button onclick="switchTab('logs')" id="tab-logs" class="tab-btn pb-2 px-4 font-semibold tracking-wide">ЛОГИ</button>
     </div>
 
-    <!-- TAB 1: ARENA -->
+    <!-- Content: ARENA -->
     <div id="content-arena" class="flex-1">
         <div class="grid grid-cols-2 gap-4">
             <button onclick="sendCommand('start_arena')" class="glass-btn text-white font-bold py-4 rounded-xl flex flex-col items-center justify-center gap-1">
@@ -136,40 +105,29 @@
         </div>
     </div>
 
-    <!-- TAB 2: BOSSES -->
+    <!-- Content: BOSSES -->
     <div id="content-bosses" class="hidden flex-1 flex flex-col">
         <button onclick="startBosses()" class="glass-btn w-full text-white font-bold py-4 rounded-xl mb-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(56,189,248,0.3)]">
             <span class="text-2xl">👹</span>
             <span class="tracking-widest uppercase">Убить выбранных</span>
         </button>
-        <div class="overflow-y-auto pr-2 pb-10 space-y-2 flex-1" id="boss-list">
-            <!-- Bosses injected here -->
-        </div>
+        <div class="overflow-y-auto pr-2 pb-10 space-y-2 flex-1" id="boss-list"></div>
     </div>
 
-    <!-- TAB 3: LOGS -->
+    <!-- Content: LOGS -->
     <div id="content-logs" class="hidden flex-1 flex flex-col h-full">
-        <div id="log-container" class="terminal-log flex-1 p-3 overflow-y-auto flex flex-col gap-1 shadow-inner h-[60vh]">
-            <div class="text-sky-400">PrisonBot HTTP API initialized.</div>
+        <div id="log-container" class="terminal-log flex-1 p-3 overflow-y-auto flex flex-col gap-1 h-[60vh]">
+            <div class="text-sky-400">PrisonBot v3.0 Local Server initialized.</div>
         </div>
     </div>
 
     <script>
-        // Init Telegram Web App
         const tg = window.Telegram.WebApp;
-        
-        // Разворачиваем только на телефоне
-        if (tg.platform !== 'tdesktop' && tg.platform !== 'macos') {
-            tg.expand();
-        }
+        if (tg.platform !== 'tdesktop' && tg.platform !== 'macos') { tg.expand(); }
         tg.ready();
-        
-        if (tg.setHeaderColor) {
-            tg.setHeaderColor('#0f172a');
-            tg.setBackgroundColor('#000000');
-        }
+        if (tg.setHeaderColor) { tg.setHeaderColor('#0f172a'); tg.setBackgroundColor('#000000'); }
 
-        const SERVER_URL = 'https://trofim-bot-arena.loca.lt'; 
+        const SERVER_URL = 'https://trofim-bot-777.loca.lt'; 
 
         const bosses = [
             { id: 'kucheryaviy', name: 'Кучерявый', emoji: '🧑‍🦱' },
@@ -184,7 +142,6 @@
             { id: 'nurlyz_suetanov', name: 'Нурлыз Суетанов', emoji: '🌪️' }
         ];
 
-        // Рендер боссов с чекбоксами
         const bossListEl = document.getElementById('boss-list');
         bosses.forEach(b => {
             const el = document.createElement('div');
@@ -192,12 +149,8 @@
             el.innerHTML = `
                 <div class="flex items-center gap-3">
                     <input type="checkbox" class="boss-checkbox w-5 h-5 accent-sky-500 rounded" value="${b.id}" checked>
-                    <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-xl border border-white/5 shadow-inner">
-                        ${b.emoji}
-                    </div>
-                    <div>
-                        <div class="font-bold text-sm text-gray-200">${b.name}</div>
-                    </div>
+                    <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-xl border border-white/5 shadow-inner">${b.emoji}</div>
+                    <div class="font-bold text-sm text-gray-200">${b.name}</div>
                 </div>
             `;
             bossListEl.appendChild(el);
@@ -209,27 +162,18 @@
         function appendLog(msg, type = 'info') {
             const div = document.createElement('div');
             const time = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-            let colorClass = 'text-gray-300';
-            if (type === 'error' || msg.includes('ОШИБКА')) colorClass = 'text-red-400';
+            let colorClass = type === 'error' || msg.includes('ОШИБКА') ? 'text-red-400' : 'text-gray-300';
             div.className = `${colorClass} py-0.5 border-b border-white/5 last:border-0`;
             div.innerHTML = `<span class="text-gray-600 text-[10px] mr-2">[${time}]</span> ${msg}`;
             logsContainer.appendChild(div);
             logsContainer.scrollTop = logsContainer.scrollHeight;
         }
 
-        // --- HTTP ПОЛЛИНГ (Заменяет WebSocket) ---
         async function fetchState() {
             try {
-                // Заголовок Bypass-Tunnel-Reminder позволяет обходить окно "Click to Continue"!
-                const res = await fetch(SERVER_URL + '/api/state', {
-                    headers: { 
-                        'Bypass-Tunnel-Reminder': 'true',
-                        'User-Agent': 'CustomPrisonBotClient/1.0'
-                    }
-                });
-                
+                // Bypass-Tunnel-Reminder игнорирует синюю кнопку Localtunnel!
+                const res = await fetch(SERVER_URL + '/api/state', { headers: { 'Bypass-Tunnel-Reminder': 'true' } });
                 if (!res.ok) throw new Error('Bad Status');
-                
                 const state = await res.json();
                 
                 document.getElementById('server-dot').className = 'status-dot status-online mr-2';
@@ -239,7 +183,6 @@
                 if (state.balance !== undefined) {
                     document.getElementById('cigs-balance').textContent = Number(state.balance).toLocaleString('ru-RU');
                 }
-
                 if (state.status && state.status !== window.lastKnownStatus) {
                     appendLog(state.status);
                     window.lastKnownStatus = state.status;
@@ -251,20 +194,15 @@
             }
         }
 
-        // Обновляем данные каждые 2 секунды
         setInterval(fetchState, 2000);
         fetchState();
 
-        // --- ОТПРАВКА КОМАНД ---
         async function sendCommand(cmd, payload = {}) {
             tg.HapticFeedback.impactOccurred('light');
             try {
                 await fetch(SERVER_URL + '/api/command', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Bypass-Tunnel-Reminder': 'true'
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
                     body: JSON.stringify({ cmd, ...payload })
                 });
                 appendLog('>> Отправлена команда: ' + cmd, 'info');
@@ -280,15 +218,12 @@
             sendCommand('start_bosses', { bosses: selectedBosses });
         }
 
-        // Переключение вкладок
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
-            
             document.getElementById('content-arena').classList.add('hidden');
             document.getElementById('content-bosses').classList.add('hidden');
             document.getElementById('content-logs').classList.add('hidden');
-            
             document.getElementById('content-' + tabId).classList.remove('hidden');
             tg.HapticFeedback.selectionChanged();
         }
