@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Prison Bot Dashboard</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-color: #0b0f19;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #ec4899;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+        .api-setup { margin-bottom: 15px; }
+        .api-input {
+            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5);
+            border: 1px solid var(--accent-primary); color: white;
+            padding: 12px; border-radius: 12px; font-size: 13px; text-align: center;
+        }
+
+        .glass-card {
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); margin-bottom: 20px;
+        }
+
+        .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; }
+        .user-info { display: flex; align-items: center; gap: 16px; }
+        .avatar {
+            width: 52px; height: 52px; border-radius: 18px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: 800; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+        }
+        .user-details h2 { margin: 0; font-size: 19px; font-weight: 700; }
+        .user-details p { margin: 4px 0 0 0; font-size: 11px; color: var(--success); font-weight: 500; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+
+        .balance { text-align: right; display: flex; flex-direction: column; align-items: flex-end;}
+        .balance p { margin: 0; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .balance strong { 
+            font-size: 19px; font-weight: 800; 
+            background: linear-gradient(to right, #fbbf24, #f59e0b);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .btn-mini {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 4px 10px; border-radius: 8px; font-size: 10px;
+            margin-top: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;
+        }
+        .btn-mini:active { transform: scale(0.95); }
+
+        .tabs { display: flex; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 20px; margin-bottom: 24px; border: 1px solid var(--glass-border); }
+        .tab { flex: 1; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 14px; color: var(--text-muted); transition: 0.3s; }
+        .tab.active { color: white; background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.05); }
+        .panel { display: none; animation: slideUp 0.4s ease forwards; }
+        .panel.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .boss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 12px; max-height: 400px; overflow-y: auto; }
+        .boss-item { background: rgba(0, 0, 0, 0.2); padding: 10px 6px; border-radius: 16px; text-align: center; border: 1px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: 0.3s; }
+        .boss-item.in-battle { border-color: var(--danger); background: rgba(239, 68, 68, 0.15); box-shadow: 0 0 15px rgba(239,68,68,0.2); }
+        .boss-icon { font-size: 24px; background: rgba(255, 255, 255, 0.05); width: 45px; height: 45px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+        .boss-name { font-size: 9px; font-weight: 700; color: var(--text-main); }
+        .boss-status-text { font-size: 8px; color: var(--success); background: rgba(0,0,0,0.4); padding: 3px 6px; border-radius: 6px;}
+
+        .btn-glow {
+            display: block; width: 100%; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white; border: none; padding: 18px; border-radius: 20px; font-size: 16px; font-weight: 800; text-align: center;
+            cursor: pointer; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3); text-transform: uppercase; margin-top: 10px; transition: 0.2s;
+        }
+        .btn-glow:active { transform: scale(0.98); }
+        .btn-glow.danger { background: linear-gradient(135deg, var(--danger), #f87171); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="api-setup">
+        <input type="text" id="apiUrl" class="api-input" placeholder="🔗 Вставьте ссылку localtunnel (https://...loca.lt)">
+    </div>
+
+    <!-- Шапка (Аватар, Имя, Статус, Баланс) -->
+    <div class="glass-card header">
+        <div class="user-info">
+            <div class="avatar" id="avatarLetter">?</div>
+            <div class="user-details">
+                <h2 id="userName">Player</h2>
+                <p id="botStatus">Нет связи с ПК</p>
+            </div>
+        </div>
+        <div class="balance">
+            <p>Сигареты</p>
+            <strong id="balanceCount">0</strong>
+            <button class="btn-mini" onclick="sendCommand('collect_cigs')">СОБРАТЬ</button>
+        </div>
+    </div>
+
+    <!-- Вкладки навигации -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('arena')" id="tab-arena">Арена</div>
+        <div class="tab" onclick="switchTab('bosses')" id="tab-bosses">Боссы</div>
+    </div>
+
+    <!-- Панель Арены -->
+    <div id="panel-arena" class="panel active">
+        <button class="btn-glow" id="startArenaBtn" onclick="toggleMode('arena')">ЗАПУСТИТЬ АРЕНУ</button>
+    </div>
+
+    <!-- Панель Боссов -->
+    <div id="panel-bosses" class="panel">
+        <div class="glass-card">
+            <div class="boss-grid" id="bossGrid"></div>
+        </div>
+        <button class="btn-glow" id="startBossesBtn" onclick="toggleMode('bosses')">НАЧАТЬ РЕЙДЫ</button>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    
+    // Включаем полноэкранный режим (для новых версий TG)
+    if (tg.requestFullscreen) {
+        tg.requestFullscreen();
+    } else {
+        tg.expand();
+    }
+
+    if (tg.initDataUnsafe?.user) {
+        document.getElementById('userName').textContent = tg.initDataUnsafe.user.first_name;
+        document.getElementById('avatarLetter').textContent = tg.initDataUnsafe.user.first_name.charAt(0).toUpperCase();
+    }
+    
+    let apiUrl = localStorage.getItem('prisonApiUrl') || '';
+    document.getElementById('apiUrl').value = apiUrl;
+    
+    document.getElementById('apiUrl').addEventListener('change', (e) => {
+        apiUrl = e.target.value.trim();
+        // Убираем слэш на конце, если пользователь его случайно скопировал
+        if(apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
+        localStorage.setItem('prisonApiUrl', apiUrl);
+    });
+
+    const bosses = [
+        { id: 'kucheryavyi', name: 'КУЧЕРЯВЫЙ', icon: '🧑‍🦱' }, { id: 'bankir', name: 'БАНКИР', icon: '💼' },
+        { id: 'ashab', name: 'АШАБ', icon: '🥊' }, { id: 'oleg', name: 'ОЛЕГ ДЕЖАВЮ', icon: '🕴️' },
+        { id: 'makaron', name: 'АРСЕНИЙ МАКАРОН', icon: '🍝' }, { id: 'businessman', name: 'БИЗНЕСМЕН', icon: '👔' },
+        { id: 'pidzhak', name: 'ПИДЖАК', icon: '🧥' }, { id: 'zhan', name: 'ЖАН ЧЕТЫРЕХПАЛЫЙ', icon: '🖐️' },
+        { id: 'sergey', name: 'СЕРГЕЙ ПИРАМИДОВИЧ', icon: '🔺' }, { id: 'nurlyz', name: 'НУРЛЫЗ СУЕТАНОВ', icon: '🏃‍♂️' },
+        { id: 'zahar', name: 'ЗАХАР', icon: '🧔' }, { id: 'dipipi', name: 'ДИ ПИПИ', icon: '🧢' },
+        { id: 'foma', name: 'ФОМА', icon: '💪' }, { id: 'shayba', name: 'ШАЙБА', icon: '🏒' },
+        { id: 'payalnik', name: 'ПАЯЛЬНИК', icon: '🔥' }, { id: 'slesar', name: 'СЛЕСАРЬ', icon: '🔧' },
+        { id: 'vito', name: 'ВИТО', icon: '🎩' }, { id: 'povar', name: 'ПОВАР', icon: '👨‍🍳' },
+        { id: 'pogremushka', name: 'ПОГРЕМУШКА', icon: '🐍' }, { id: 'monah', name: 'МОНАХ', icon: '🧘‍♂️' },
+        { id: 'santehnik', name: 'САНТЕХНИК', icon: '🪠' }, { id: 'shuler', name: 'ШУЛЕР', icon: '🃏' },
+        { id: 'buryat', name: 'БУРЯТ', icon: '👲' }, { id: 'mafioznik', name: 'МАФИОЗНИК', icon: '🔫' },
+        { id: 'karatist', name: 'КАРАТИСТ', icon: '🥋' }
+    ];
+
+    function renderBosses() {
+        const grid = document.getElementById('bossGrid');
+        grid.innerHTML = '';
+        bosses.forEach((b, index) => {
+            grid.innerHTML += `
+                <div class="boss-item" id="boss-card-${index}">
+                    <div class="boss-icon">${b.icon}</div>
+                    <div class="boss-name">${b.name}</div>
+                    <div class="boss-status-text" id="boss-status-${index}">Ожидание</div>
+                </div>`;
+        });
+    }
+    renderBosses();
+
+    function switchTab(tab) {
+        ['arena', 'bosses'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.remove('active');
+            document.getElementById(`panel-${t}`).classList.remove('active');
+        });
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        document.getElementById(`panel-${tab}`).classList.add('active');
+    }
+
+    async function fetchState() {
+        if(!apiUrl) return; // Если ссылки нет, ничего не делаем
+        
+        try {
+            // Запрашиваем статус у ПК. 'Bypass-Tunnel-Reminder' нужен, чтобы пробить защиту localtunnel
+            const res = await fetch(`${apiUrl}/api/state`, { headers: { 'Bypass-Tunnel-Reminder': 'true' } });
+            const state = await res.json();
+            
+            // 1. Обновляем баланс сигарет
+            if (state.balance) {
+                document.getElementById('balanceCount').textContent = state.balance.toLocaleString('ru-RU');
+            }
+            
+            // 2. Обновляем текст статуса под именем
+            document.getElementById('botStatus').textContent = state.status;
+            document.getElementById('botStatus').style.color = state.isRunning ? 'var(--success)' : 'var(--text-muted)';
+
+            // 3. Обновляем кнопки (если бот запущен, кнопка становится красной "Остановить")
+            const arenaBtn = document.getElementById('startArenaBtn');
+            const bossBtn = document.getElementById('startBossesBtn');
+
+            if(state.isRunning && state.mode === 'arena') {
+                arenaBtn.textContent = 'ОСТАНОВИТЬ АРЕНУ'; arenaBtn.classList.add('danger');
+            } else {
+                arenaBtn.textContent = 'ЗАПУСТИТЬ АРЕНУ'; arenaBtn.classList.remove('danger');
+            }
+
+            if(state.isRunning && state.mode === 'bosses') {
+                bossBtn.textContent = 'ОСТАНОВИТЬ РЕЙДЫ'; bossBtn.classList.add('danger');
+            } else {
+                bossBtn.textContent = 'НАЧАТЬ РЕЙДЫ'; bossBtn.classList.remove('danger');
+            }
+
+            // 4. Подсвечиваем текущего босса красным цветом
+            if (state.mode === 'bosses' && state.currentBossIndex >= 0) {
+                bosses.forEach((b, i) => {
+                    const card = document.getElementById(`boss-card-${i}`);
+                    const status = document.getElementById(`boss-status-${i}`);
+                    
+                    if (i === state.currentBossIndex) {
+                        card.classList.add('in-battle');
+                        status.textContent = '⚔️ В БОЮ';
+                        status.style.color = 'var(--danger)';
+                    } else if (i < state.currentBossIndex) {
+                        card.classList.remove('in-battle');
+                        status.textContent = '✅ Пройден/КД';
+                        status.style.color = 'var(--text-muted)';
+                    } else {
+                        card.classList.remove('in-battle');
+                        status.textContent = 'Ожидание';
+                        status.style.color = 'var(--success)';
+                    }
+                });
+            }
+
+        } catch(e) {
+            document.getElementById('botStatus').textContent = 'Нет связи с ПК!';
+            document.getElementById('botStatus').style.color = 'var(--danger)';
+        }
+    }
+
+    async function sendCommand(cmd) {
+        if(!apiUrl) {
+            tg.showAlert('Пожалуйста, вставьте ссылку от localtunnel в поле сверху!');
+            return;
+        }
+        try {
+            await fetch(`${apiUrl}/api/command`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
+                body: JSON.stringify({ cmd })
+            });
+            fetchState(); // Сразу обновляем интерфейс, чтобы показать реакцию
+        } catch(e) {
+            tg.showAlert('Не удалось отправить команду. Проверьте, запущено ли черное окно (Node.js) и localtunnel на вашем ПК.');
+        }
+    }
+
+    function toggleMode(mode) {
+        const btn = document.getElementById(mode === 'arena' ? 'startArenaBtn' : 'startBossesBtn');
+        if(btn.classList.contains('danger')) {
+            // Если кнопка красная - значит бот работает, отправляем команду STOP
+            sendCommand('stop');
+        } else {
+            // Иначе отправляем команду на старт
+            sendCommand(mode === 'arena' ? 'start_arena' : 'start_bosses');
+        }
+    }
+
+    // Запускаем цикл опроса ПК каждые 2 секунды
+    setInterval(fetchState, 2000);
+</script>
+</body>
+</html>
