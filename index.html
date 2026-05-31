@@ -171,13 +171,15 @@
         </div>
     </div>
 
-    <!-- TAB 2: БОССЫ -->
+    <!-- TAB 2: БОССЫ (ДИНАМИЧЕСКИЕ ИЗ ИГРЫ) -->
     <div id="content-bosses" class="hidden flex-1 flex flex-col">
         <button onclick="startBosses()" class="glass-btn w-full text-white font-bold py-4 rounded-xl mb-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
             <span class="text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">👹</span>
-            <span class="tracking-widest uppercase text-sm">Убить доступных</span>
+            <span class="tracking-widest uppercase text-sm">Убить выбранных</span>
         </button>
-        <div class="overflow-y-auto pr-2 pb-10 space-y-2 flex-1" id="boss-list"></div>
+        <div class="overflow-y-auto pr-2 pb-10 space-y-2 flex-1" id="boss-list">
+            <div class="text-center text-gray-500 text-xs py-4">Синхронизация с сервером игры...</div>
+        </div>
     </div>
 
     <!-- TAB 3: ЛОГИ -->
@@ -187,7 +189,7 @@
             <button onclick="document.getElementById('log-container').innerHTML=''" class="text-[10px] text-gray-600 hover:text-sky-400 transition">Очистить</button>
         </div>
         <div id="log-container" class="terminal-log flex-1 p-3 overflow-y-auto flex flex-col gap-1 shadow-inner h-[55vh]">
-            <div class="text-sky-400 font-bold mb-2">PrisonBot Panel v5.0 Ready.</div>
+            <div class="text-sky-400 font-bold mb-2">PrisonBot Panel v6.0 Ready.</div>
         </div>
     </div>
 
@@ -197,42 +199,12 @@
         tg.ready();
         if (tg.setHeaderColor) { tg.setHeaderColor('#0f172a'); tg.setBackgroundColor('#000000'); }
 
-        const SERVER_URL = 'https://trofim-farm-app.loca.lt'; 
-        window.uiBossData = {};
-
-        // Точные ключи, по которым сервер игры опознает боссов!
-        const bosses = [
-            { id: 'kucheryaviy', name: 'Кучерявый', emoji: '🧑‍🦱' },
-            { id: 'banker', name: 'Банкир', emoji: '💼' },
-            { id: 'ashab', name: 'Ашаб', emoji: '🧔🏽‍♂️' },
-            { id: 'oleg', name: 'Олег Дежавю', emoji: '🌀' },
-            { id: 'makaron', name: 'Арсений Макарон', emoji: '🍝' },
-            { id: 'mrbusiness', name: 'Бизнесмен', emoji: '📈' },
-            { id: 'baretsky', name: 'Пиджак', emoji: '👔' },
-            { id: 'zhan', name: 'Жан Четырехпалый', emoji: '🖐️' },
-            { id: 'sergey', name: 'Сергей Пирамидович', emoji: '🔺' },
-            { id: 'nurlyz', name: 'Нурлыз Суетанов', emoji: '🌪️' }
-        ];
-
-        const bossListEl = document.getElementById('boss-list');
-        bosses.forEach(b => {
-            const el = document.createElement('div');
-            el.className = 'boss-card p-3 flex items-center justify-between w-full';
-            el.innerHTML = `
-                <div class="flex items-center gap-3 w-full">
-                    <input type="checkbox" class="boss-checkbox w-5 h-5 accent-sky-500 rounded cursor-pointer shrink-0" value="${b.id}" checked>
-                    <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-xl border border-white/5 shadow-inner shrink-0">${b.emoji}</div>
-                    <div class="flex flex-col w-full">
-                        <div class="font-bold text-sm text-gray-200">${b.name}</div>
-                        <div id="cd-${b.id}" class="text-[10px] font-mono text-gray-500 bg-black/30 rounded px-1.5 py-0.5 mt-0.5 w-fit">Загрузка КД...</div>
-                    </div>
-                </div>
-            `;
-            bossListEl.appendChild(el);
-        });
-
+        const SERVER_URL = 'https://trofim-bot-555.loca.lt'; 
+        
         const logsContainer = document.getElementById('log-container');
         window.lastKnownStatus = '';
+        window.realBosses = null;
+        let renderedBossesStr = '';
 
         function appendLog(msg, type = 'info') {
             const div = document.createElement('div');
@@ -249,7 +221,32 @@
             logsContainer.scrollTop = logsContainer.scrollHeight;
         }
 
-        // --- УМНЫЙ ОПРОС СЕРВЕРА (Стабильное подключение) ---
+        // --- ДИНАМИЧЕСКАЯ ОТРИСОВКА БОССОВ ---
+        function renderBosses(bosses) {
+            const bossListEl = document.getElementById('boss-list');
+            if (!bosses || bosses.length === 0) {
+                bossListEl.innerHTML = '<div class="text-center text-red-400 text-xs py-4">Не удалось найти боссов. Возможно, ошибка API или нет доступных рейдов.</div>';
+                return;
+            }
+            bossListEl.innerHTML = '';
+            bosses.forEach(b => {
+                const el = document.createElement('div');
+                el.className = 'boss-card p-3 flex items-center justify-between w-full';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3 w-full">
+                        <input type="checkbox" class="boss-checkbox w-5 h-5 accent-sky-500 rounded cursor-pointer shrink-0" value="${b.uuid}" checked>
+                        <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-xl border border-white/5 shadow-inner shrink-0">👹</div>
+                        <div class="flex flex-col w-full">
+                            <div class="font-bold text-sm text-gray-200">${b.name}</div>
+                            <div id="cd-${b.uuid}" class="text-[10px] font-mono text-gray-500 bg-black/30 rounded px-1.5 py-0.5 mt-0.5 w-fit">Загрузка КД...</div>
+                        </div>
+                    </div>
+                `;
+                bossListEl.appendChild(el);
+            });
+        }
+
+        // --- УМНЫЙ ОПРОС СЕРВЕРА ---
         let fetchTimeout;
         let failCount = 0;
 
@@ -259,14 +256,20 @@
                 if (!res.ok) throw new Error('Status Error');
                 const state = await res.json();
                 
-                failCount = 0; // Сбрасываем счетчик ошибок при успехе
+                failCount = 0; 
                 document.getElementById('server-dot').className = 'status-dot status-online mr-2';
                 document.getElementById('server-status').textContent = 'Связь установлена';
                 document.getElementById('server-status').className = 'text-emerald-400 font-bold';
                 document.getElementById('fix-connection-btn').classList.add('hidden');
                 
                 if (state.balance !== undefined) document.getElementById('cigs-balance').textContent = Number(state.balance).toLocaleString('ru-RU');
-                if (state.uiBossData) window.uiBossData = state.uiBossData;
+                
+                // Рендерим боссов, если список изменился
+                if (state.realBosses && JSON.stringify(state.realBosses) !== renderedBossesStr) {
+                    renderedBossesStr = JSON.stringify(state.realBosses);
+                    renderBosses(state.realBosses);
+                }
+                if (state.realBosses) window.realBosses = state.realBosses;
 
                 if (state.status && state.status !== window.lastKnownStatus) {
                     appendLog(state.status);
@@ -274,7 +277,6 @@
                 }
             } catch (err) {
                 failCount++;
-                // Показываем ошибку только если связь пропала на 3+ попытки подряд
                 if (failCount >= 3) {
                     document.getElementById('server-dot').className = 'status-dot status-offline mr-2';
                     document.getElementById('server-status').textContent = 'Потеряно соединение';
@@ -288,31 +290,24 @@
 
         // --- ТАЙМЕРЫ БОССОВ ---
         setInterval(() => {
-            if (!window.uiBossData) return;
+            if (!window.realBosses) return;
             const now = Date.now();
 
-            bosses.forEach(b => {
-                const el = document.getElementById(`cd-${b.id}`);
+            window.realBosses.forEach(b => {
+                const el = document.getElementById(`cd-${b.uuid}`);
                 if (!el) return;
 
-                const bData = window.uiBossData[b.id];
+                if (b.nextTime > now) {
+                    const diff = b.nextTime - now;
+                    let h = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+                    let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+                    let s = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
 
-                if (bData && bData.nextTime) {
-                    const diff = bData.nextTime - now;
-                    if (diff > 0) {
-                        let h = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
-                        let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
-                        let s = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
-
-                        el.innerHTML = `⏳ КД: <span class="text-amber-400">${h}:${m}:${s}</span>`;
-                        el.className = "text-[10px] font-mono text-gray-400 bg-black/40 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-amber-500/20";
-                    } else {
-                        el.innerHTML = "✅ ДОСТУПЕН";
-                        el.className = "text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]";
-                    }
+                    el.innerHTML = `⏳ КД: <span class="text-amber-400">${h}:${m}:${s}</span>`;
+                    el.className = "text-[10px] font-mono text-gray-400 bg-black/40 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-amber-500/20";
                 } else {
-                    el.innerHTML = "❔ Нет данных";
-                    el.className = "text-[10px] font-mono text-gray-500 bg-black/30 rounded px-1.5 py-0.5 mt-0.5 w-fit";
+                    el.innerHTML = "✅ ДОСТУПЕН";
+                    el.className = "text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]";
                 }
             });
         }, 1000);
@@ -320,7 +315,7 @@
         function fixConnection() {
             tg.openLink(SERVER_URL);
             tg.showAlert("В открывшемся окне нажмите синюю кнопку 'Click to Continue', затем закройте его и связь появится!");
-            failCount = 0; // Сбрасываем, чтобы попробовать подключиться заново
+            failCount = 0; 
         }
 
         async function sendCommand(cmd, payload = {}) {
