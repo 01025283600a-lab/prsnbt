@@ -18,7 +18,6 @@
             overflow-x: hidden;
         }
 
-        /* Glassmorphism Styles */
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(16px);
@@ -34,11 +33,6 @@
             color: #38bdf8;
             border-radius: 12px;
             transition: all 0.3s ease;
-        }
-        .glass-input:focus {
-            outline: none;
-            border-color: rgba(56, 189, 248, 0.5);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
         }
 
         .glass-btn {
@@ -56,7 +50,6 @@
         }
         .glass-btn-danger:active { transform: scale(0.96); }
 
-        /* Tabs */
         .tab-btn {
             color: rgba(255, 255, 255, 0.4);
             border-bottom: 2px solid transparent;
@@ -70,7 +63,6 @@
             text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
         }
 
-        /* Elements */
         .boss-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.04);
@@ -89,14 +81,12 @@
             font-size: 0.8rem;
         }
 
-        /* Toggle Switch */
         .toggle-checkbox:checked { right: 0; border-color: #38bdf8; }
         .toggle-checkbox:checked + .toggle-label { background-color: #38bdf8; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- Header / Status -->
     <header class="glass-panel p-4 mb-5 flex justify-between items-center relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 via-blue-500 to-sky-400 opacity-50"></div>
         <div>
@@ -115,7 +105,6 @@
         </div>
     </header>
 
-    <!-- Кнопка починки связи (Скрыта по умолчанию) -->
     <div id="fix-connection-btn" class="hidden mb-5">
         <button onclick="fixConnection()" class="w-full bg-red-500/20 border border-red-500/50 text-red-300 p-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse">
             <span class="text-lg">⚠️</span> 
@@ -123,19 +112,16 @@
         </button>
     </div>
 
-    <!-- Tabs Navigation -->
     <div class="flex justify-around mb-6 border-b border-white/10 pb-2">
         <button onclick="switchTab('arena')" id="tab-arena" class="tab-btn active pb-2 px-4">АРЕНА</button>
         <button onclick="switchTab('bosses')" id="tab-bosses" class="tab-btn pb-2 px-4">БОССЫ</button>
         <button onclick="switchTab('logs')" id="tab-logs" class="tab-btn pb-2 px-4">ЛОГИ</button>
     </div>
 
-    <!-- TAB 1: ARENA -->
     <div id="content-arena" class="flex-1 flex flex-col gap-4 animate-fade-in">
         <div class="glass-panel p-5">
             <div class="flex justify-between items-center mb-5">
                 <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Настройки Арены</h2>
-                <!-- Infinity Toggle -->
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] text-sky-400 uppercase tracking-wider font-bold">Бесконечно</span>
                     <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
@@ -185,11 +171,11 @@
         </div>
     </div>
 
-    <!-- TAB 2: BOSSES -->
+    <!-- TAB 2: BOSSES (Здесь добавлены таймеры) -->
     <div id="content-bosses" class="hidden flex-1 flex flex-col">
         <button onclick="startBosses()" class="glass-btn w-full text-white font-bold py-4 rounded-xl mb-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
             <span class="text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">👹</span>
-            <span class="tracking-widest uppercase text-sm">Убить выбранных</span>
+            <span class="tracking-widest uppercase text-sm">Убить доступных</span>
         </button>
         <div class="overflow-y-auto pr-2 pb-10 space-y-2 flex-1" id="boss-list"></div>
     </div>
@@ -201,7 +187,7 @@
             <button onclick="document.getElementById('log-container').innerHTML=''" class="text-[10px] text-gray-600 hover:text-sky-400 transition">Очистить</button>
         </div>
         <div id="log-container" class="terminal-log flex-1 p-3 overflow-y-auto flex flex-col gap-1 shadow-inner h-[55vh]">
-            <div class="text-sky-400 font-bold mb-2">PrisonBot Panel v3.1 Ready.</div>
+            <div class="text-sky-400 font-bold mb-2">PrisonBot Panel v4.0 Ready.</div>
         </div>
     </div>
 
@@ -212,6 +198,9 @@
         if (tg.setHeaderColor) { tg.setHeaderColor('#0f172a'); tg.setBackgroundColor('#000000'); }
 
         const SERVER_URL = 'https://trofim-farm-app.loca.lt'; 
+        
+        // Глобальная переменная для КД
+        window.bossData = {};
 
         const bosses = [
             { id: 'kucheryaviy', name: 'Кучерявый', emoji: '🧑‍🦱' },
@@ -229,12 +218,15 @@
         const bossListEl = document.getElementById('boss-list');
         bosses.forEach(b => {
             const el = document.createElement('div');
-            el.className = 'boss-card p-3 flex items-center justify-between';
+            el.className = 'boss-card p-3 flex items-center justify-between w-full';
             el.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <input type="checkbox" class="boss-checkbox w-5 h-5 accent-sky-500 rounded cursor-pointer" value="${b.id}" checked>
-                    <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-xl border border-white/5 shadow-inner">${b.emoji}</div>
-                    <div class="font-bold text-sm text-gray-200">${b.name}</div>
+                <div class="flex items-center gap-3 w-full">
+                    <input type="checkbox" class="boss-checkbox w-5 h-5 accent-sky-500 rounded cursor-pointer shrink-0" value="${b.id}" checked>
+                    <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-xl border border-white/5 shadow-inner shrink-0">${b.emoji}</div>
+                    <div class="flex flex-col w-full">
+                        <div class="font-bold text-sm text-gray-200">${b.name}</div>
+                        <div id="cd-${b.id}" class="text-[10px] font-mono text-gray-500 bg-black/30 rounded px-1.5 py-0.5 mt-0.5 w-fit">Загрузка КД...</div>
+                    </div>
                 </div>
             `;
             bossListEl.appendChild(el);
@@ -249,8 +241,8 @@
             
             let colorClass = 'text-gray-300';
             if (msg.includes('ОШИБКА') || type === 'error') colorClass = 'text-red-400';
-            if (msg.includes('Сбор завершен') || msg.includes('Арена завершена') || type === 'success') colorClass = 'text-emerald-400';
-            if (msg.includes('⚡') || msg.includes('Арена:')) colorClass = 'text-sky-300';
+            if (msg.includes('Сбор завершен') || msg.includes('Арена завершена') || msg.includes('УБИТ') || type === 'success') colorClass = 'text-emerald-400';
+            if (msg.includes('⚡') || msg.includes('Арена:') || msg.includes('Бьем босса')) colorClass = 'text-sky-300';
 
             div.className = `${colorClass} py-0.5 border-b border-white/5 last:border-0 leading-tight`;
             div.innerHTML = `<span class="text-gray-600 text-[10px] mr-2">[${time}]</span> ${msg}`;
@@ -258,69 +250,94 @@
             logsContainer.scrollTop = logsContainer.scrollHeight;
         }
 
-        // --- УМНЫЙ ОПРОС СЕРВЕРА (БЕЗ ЗАДЕРЖЕК) ---
+        // --- УМНЫЙ ОПРОС СЕРВЕРА ---
         let fetchTimeout;
         async function fetchState() {
             try {
-                const res = await fetch(SERVER_URL + '/api/state', {
-                    headers: { 'Bypass-Tunnel-Reminder': 'true' } // Обход заглушки!
-                });
-                
+                const res = await fetch(SERVER_URL + '/api/state', { headers: { 'Bypass-Tunnel-Reminder': 'true' }});
                 if (!res.ok) throw new Error('Status Error');
-                
                 const state = await res.json();
                 
-                // Связь есть!
                 document.getElementById('server-dot').className = 'status-dot status-online mr-2';
                 document.getElementById('server-status').textContent = 'Связь установлена';
                 document.getElementById('server-status').className = 'text-emerald-400 font-bold';
-                document.getElementById('fix-connection-btn').classList.add('hidden'); // Прячем кнопку починки
+                document.getElementById('fix-connection-btn').classList.add('hidden');
                 
-                if (state.balance !== undefined) {
-                    document.getElementById('cigs-balance').textContent = Number(state.balance).toLocaleString('ru-RU');
-                }
+                if (state.balance !== undefined) document.getElementById('cigs-balance').textContent = Number(state.balance).toLocaleString('ru-RU');
+                
+                // Сохраняем данные боссов для таймера
+                if (state.bossData) window.bossData = state.bossData;
+
                 if (state.status && state.status !== window.lastKnownStatus) {
                     appendLog(state.status);
                     window.lastKnownStatus = state.status;
                 }
             } catch (err) {
-                // Связи нет!
                 document.getElementById('server-dot').className = 'status-dot status-offline mr-2';
                 document.getElementById('server-status').textContent = 'Потеряно соединение';
                 document.getElementById('server-status').className = 'text-red-400';
-                
-                // ПОКАЗЫВАЕМ КНОПКУ ПОЧИНКИ
                 document.getElementById('fix-connection-btn').classList.remove('hidden');
             }
-            
-            // Запускаем следующий запрос только когда завершился этот (нет лагов)
             fetchTimeout = setTimeout(fetchState, 1500);
         }
-        
-        // Запуск первого опроса
         fetchState();
 
-        // --- КНОПКА ПОЧИНКИ СВЯЗИ ---
+        // --- ЛОКАЛЬНЫЙ ТАЙМЕР КД (Тикает каждую секунду) ---
+        setInterval(() => {
+            if (!window.bossData) return;
+            const now = Date.now();
+
+            bosses.forEach(b => {
+                const el = document.getElementById(`cd-${b.id}`);
+                if (!el) return;
+
+                // Умный поиск босса в данных (так как ключи API могут чуть отличаться от наших ID)
+                let bData = window.bossData[b.id.toLowerCase()];
+                if (!bData) {
+                    let foundKey = Object.keys(window.bossData).find(k => k.includes(b.id.toLowerCase()) || b.id.toLowerCase().includes(k));
+                    if (foundKey) bData = window.bossData[foundKey];
+                }
+
+                if (bData && bData.nextTime) {
+                    const diff = bData.nextTime - now;
+                    if (diff > 0) {
+                        // Рассчитываем часы, минуты, секунды
+                        let h = Math.floor(diff / (1000 * 60 * 60));
+                        let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        let s = Math.floor((diff % (1000 * 60)) / 1000);
+                        
+                        // Добавляем нули (например, 09:05:02)
+                        h = h.toString().padStart(2, '0');
+                        m = m.toString().padStart(2, '0');
+                        s = s.toString().padStart(2, '0');
+
+                        el.innerHTML = `⏳ КД: <span class="text-amber-400">${h}:${m}:${s}</span>`;
+                        el.className = "text-[10px] font-mono text-gray-400 bg-black/40 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-amber-500/20";
+                    } else {
+                        el.innerHTML = "✅ ДОСТУПЕН";
+                        el.className = "text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]";
+                    }
+                } else {
+                    el.innerHTML = "✅ ДОСТУПЕН";
+                    el.className = "text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded px-1.5 py-0.5 mt-0.5 w-fit border border-emerald-500/30";
+                }
+            });
+        }, 1000);
+
         function fixConnection() {
-            // Открывает ссылку в браузере, чтобы юзер нажал "Click to Continue"
             tg.openLink(SERVER_URL);
             tg.showAlert("В открывшемся окне нажмите синюю кнопку 'Click to Continue', затем закройте его и связь появится!");
         }
 
-        // --- ОТПРАВКА КОМАНД ---
         async function sendCommand(cmd, payload = {}) {
             tg.HapticFeedback.impactOccurred('light');
-            
-            // Не ждем ответа, чтобы не вешать интерфейс
             fetch(SERVER_URL + '/api/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
                 body: JSON.stringify({ cmd, ...payload })
-            }).catch(() => {
-                appendLog('Ошибка отправки: ' + cmd, 'error');
-            });
+            }).catch(() => { appendLog('Ошибка отправки: ' + cmd, 'error'); });
             
-            appendLog('>> Отправлена команда: ' + cmd, 'info');
+            if(cmd !== 'start_bosses') appendLog('>> Отправлена команда: ' + cmd, 'info');
         }
 
         function startArena() {
@@ -339,10 +356,10 @@
         function startBosses() {
             const selectedBosses = Array.from(document.querySelectorAll('.boss-checkbox:checked')).map(cb => cb.value);
             if (selectedBosses.length === 0) return tg.showAlert("Выберите хотя бы одного босса!");
+            appendLog(`>> Старт рейдов (Выбрано боссов: ${selectedBosses.length})`, 'info');
             sendCommand('start_bosses', { bosses: selectedBosses });
         }
 
-        // Логика бесконечного тумблера
         document.getElementById('infinity-toggle').addEventListener('change', function(e) {
             const cyclesContainer = document.getElementById('cycles-container');
             cyclesContainer.style.opacity = e.target.checked ? '0.3' : '1';
@@ -353,11 +370,9 @@
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
-            
             document.getElementById('content-arena').classList.add('hidden');
             document.getElementById('content-bosses').classList.add('hidden');
             document.getElementById('content-logs').classList.add('hidden');
-            
             document.getElementById('content-' + tabId).classList.remove('hidden');
             tg.HapticFeedback.selectionChanged();
         }
